@@ -47,6 +47,11 @@ class TimelineExtractor:
         logger.info(f"{self.basic_info.logger_str} Processing Gamestate")
         t_start_gs = time.process_time()
         with datamodel.get_db_session(game_id=game_id) as self._session:
+
+            @event.listens_for(self._session, "pending_to_persistent")
+            def intercept_pending_to_persistent(sesh, object):
+                print(f"making persistent: ${object}")
+
             try:
                 db_game = self._get_or_add_game_to_db(game_id)
                 if self._check_if_gamestate_exists(db_game):
