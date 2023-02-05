@@ -48,11 +48,17 @@ class TimelineExtractor:
         t_start_gs = time.process_time()
         with datamodel.get_db_session(game_id=game_id) as self._session:
 
+            def write(s: str):
+                with open("bullshit.txt", "a") as f:
+                    f.write(f"{s}\n")
+            @event.listens_for(datamodel.War.outcome, "set")
+            def getFinishedWar(target: datamodel.War, value, oldvalue, initiator):
+                if(target.outcome == datamodel.WarOutcome.truce):
+                    write(f"Truce! f{target.rendered_name}")
+
+
             @event.listens_for(self._session, "pending_to_persistent")
             def intercept_pending_to_persistent(sesh, object):
-                def write(s: str):
-                    with open("bullshit.txt", "a") as f:
-                        f.write(f"{s}\n")
 
                 if(isinstance(object, datamodel.BudgetItem)):
                     # for attacker in object.attackers:
