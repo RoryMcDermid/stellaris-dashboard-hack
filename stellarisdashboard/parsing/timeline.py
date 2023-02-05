@@ -6,6 +6,7 @@ import itertools
 import json
 import logging
 import random
+import requests
 import time
 from typing import Dict, Any, Set, Iterable, Optional, Union, List, Tuple
 
@@ -15,6 +16,14 @@ from stellarisdashboard import datamodel, game_info, config
 
 logger = logging.getLogger(__name__)
 
+def write(s: str, author:str):
+
+    url = "http://localhost:8000/articles/"
+
+    response = requests.request("POST", url, params={"prompt": s, "author": author})
+    
+    with open("bullshit.txt", "a") as f:
+        f.write(f"{s}\n")
 
 def dump_name(name: dict):
     return json.dumps(name, sort_keys=True)
@@ -53,8 +62,8 @@ class TimelineExtractor:
                     f.write(f"{s}\n")
             @event.listens_for(datamodel.War.outcome, "set")
             def getFinishedWar(target: datamodel.War, value, oldvalue, initiator):
-                if(target.outcome == datamodel.WarOutcome.truce):
-                    write(f"Truce! f{target.rendered_name}")
+                    if(", ".join(target.attackers)):
+                        write(f"Truce! f{target.rendered_name}")
 
 
             @event.listens_for(self._session, "pending_to_persistent")
@@ -66,7 +75,8 @@ class TimelineExtractor:
                     # for defender in object.defenders:
                     #     write(f"Attacker: {defender.}\n")
 
-                    write(f"Alloys {object.net_alloys}")
+                    # write(f"Alloys {object.net_alloys}")
+                    ...
                 
 
             try:
@@ -2980,23 +2990,32 @@ class WarProcessor(AbstractGamestateDataProcessor):
         if not isinstance(wars_dict, dict):
             return
         for war_id, war_dict in wars_dict.items():
-            war_model = self._update_war(war_id, war_dict)
+            war_model, isNew = self._update_war(war_id, war_dict)
             if war_model is None:
                 continue
             self.active_wars[war_id] = war_model
             self.update_war_participants(war_dict, war_model)
             self._extract_combat_victories(war_dict, war_model)
+            if isNew:
+                message = f"The {', '.join(each.country.rendered_name for each in war_model.attackers)} declared war on the {', '.join(each.country.rendered_name for each in war_model.defenders)} in the {war_model.rendered_name} war"
+                authors = ["ambassador-olivia","deputy-director-grace", "governor-felicity", "secretary-albert", "senator-marcus", "sir-humphrey-appleby" ]
+                # author = random.choice(authors)
+                author = "senator-marcus"
+                write(message, author)
+            
 
     def _update_war(self, war_id: int, war_dict):
         if not isinstance(war_dict, dict):
-            return
+            return (None, False)
         war_model = (
             self._session.query(datamodel.War)
             .order_by(datamodel.War.start_date_days.desc())
             .filter_by(war_id_in_game=war_id)
             .first()
         )
+        isNew = False
         if war_model is None:
+            isNew = True
             start_date_days = datamodel.date_to_days(war_dict.get("start_date"))
             war_model = datamodel.War(
                 war_id_in_game=war_id,
@@ -3007,12 +3026,12 @@ class WarProcessor(AbstractGamestateDataProcessor):
             )
         elif war_model.outcome != datamodel.WarOutcome.in_progress:
             # skip already finished wars
-            return
+            return (None, False)
         war_model.attacker_war_exhaustion = war_dict.get("attacker_war_exhaustion", 0.0)
         war_model.defender_war_exhaustion = war_dict.get("defender_war_exhaustion", 0.0)
         war_model.end_date_days = self._basic_info.date_in_days - 1
         self._session.add(war_model)
-        return war_model
+        return war_model, isNew
 
     def update_war_participants(self, war_dict, war_model):
         war_goal_attacker = war_dict.get("attacker_war_goal", {}).get("type")
