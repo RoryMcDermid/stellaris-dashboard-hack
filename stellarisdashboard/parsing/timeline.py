@@ -20,7 +20,7 @@ def write(s: str, author:str):
 
     url = "http://localhost:8000/articles/"
 
-    response = requests.request("POST", url, params={"prompt": s, "author": author})
+    # response = requests.request("POST", url, params={"prompt": s, "author": author})
     
     with open("bullshit.txt", "a") as f:
         f.write(f"{s}\n")
@@ -2309,7 +2309,12 @@ class DiplomacyUpdatesProcessor(AbstractGamestateDataProcessor):
                                 db_description=self._get_event_description(
                                     et, c_model, tc_model
                                 ),
+                                
                             )
+                        
+                            # if et == datamodel.HistoricalEvent.event_type.:
+                            write(f"{c_model.rendered_name} formed an {self._get_event_description(et, c_model, tc_model)} with {tc_model.rendered_name}", "Marcus")
+                            
                             self._session.add(matching_event)
                     elif was_active:  # Set end date of existing historical event entry
                         for (et, c_model, tc_model, _) in country_tuples:
@@ -2357,6 +2362,10 @@ class DiplomacyUpdatesProcessor(AbstractGamestateDataProcessor):
         country: datamodel.Country,
         target_country: datamodel.Country,
     ) -> Optional[datamodel.HistoricalEvent]:
+        # if(event_type == datamodel.HistoricalEventType.government_reform):
+        # write(f"{event_type.value}", "Marcus")
+        # if(event_type == datamodel.HistoricalEventType.terraforming):
+        #     write(f"{event_type.value}", "Marcus")
         return (
             self._session.query(datamodel.HistoricalEvent)
             .filter_by(
