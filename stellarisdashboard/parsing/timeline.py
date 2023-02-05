@@ -2313,7 +2313,7 @@ class DiplomacyUpdatesProcessor(AbstractGamestateDataProcessor):
                             )
                         
                             # if et == datamodel.HistoricalEvent.event_type.:
-                            write(f"{c_model.rendered_name} formed an {self._get_event_description(et, c_model, tc_model)} with {tc_model.rendered_name}", "Marcus")
+                            # write(f"{c_model.rendered_name} formed an {self._get_event_description(et, c_model, tc_model)} with {tc_model.rendered_name}", "Marcus")
                             
                             self._session.add(matching_event)
                     elif was_active:  # Set end date of existing historical event entry
