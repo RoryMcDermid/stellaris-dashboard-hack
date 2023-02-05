@@ -10,7 +10,7 @@ import time
 from typing import Dict, Any, Set, Iterable, Optional, Union, List, Tuple
 
 import sqlalchemy
-
+from sqlalchemy import event
 from stellarisdashboard import datamodel, game_info, config
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,18 @@ class TimelineExtractor:
 
             @event.listens_for(self._session, "pending_to_persistent")
             def intercept_pending_to_persistent(sesh, object):
-                print(f"making persistent: ${object}")
+                def write(s: str):
+                    with open("bullshit.txt", "a") as f:
+                        f.write(f"{s}\n")
+
+                if(isinstance(object, datamodel.BudgetItem)):
+                    # for attacker in object.attackers:
+                    #     write(f"Attacker: {attacker.country_id}\n")
+                    # for defender in object.defenders:
+                    #     write(f"Attacker: {defender.}\n")
+
+                    write(f"Alloys {object.net_alloys}")
+                
 
             try:
                 db_game = self._get_or_add_game_to_db(game_id)
